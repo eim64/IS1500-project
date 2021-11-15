@@ -9,6 +9,8 @@
 #include <stddef.h>   /* Declarations of integer sizes and the like, part 1 */
 #include <stdint.h>   /* Declarations of integer sizes and the like, part 2 */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
+#include "display.h"
+
 void user_isr() { }
 extern void game_logic();
 
@@ -59,5 +61,6 @@ int main()
 
   while(1)
   {
+    game_logic();
   }
 }
