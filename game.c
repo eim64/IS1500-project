@@ -38,6 +38,33 @@ uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
   {1,1,1,1,1,1,1,1,1,1}
 };
 
+/*
+    each sprite pixel consists of 2 bits
+    bit 1 is the value to be drawn
+    bit 2 is weather the bit is to be drawn
+
+    each value in the row corresponds to a row, bottom -> top
+    rotate 90 counterclockwise for correct representation
+*/
+uint32_t enspr[16] ={
+        0b00000000000000001010100000000000, // TL
+        0b00000000000000100101011000000000,
+        0b00000000000010011010010110100000,
+        0b00000000001001010110100101011000,
+        0b00000000100101011001100101011000,
+        0b00000000100101101001010101011000,
+        0b00000010010110011001101001011000,
+        0b00000010011001100101101001011000,
+        0b00000010011010100101011001011000,
+        0b00001001011001100110011001011000,
+        0b00001001011010101001010101011000,
+        0b00001001011001101001101001011000,
+        0b00001001011010100110101001011000,
+        0b00001001011001100101011001011000,
+        0b00001001010110101010010110100000,
+        0b00000010101000000000101000000000 // TR
+    };
+
 float zbuffer[DRAW_WIDTH];
 
 bool can_hit(const float t_x, const float t_y, const float col_size){
@@ -54,6 +81,64 @@ bool can_hit(const float t_x, const float t_y, const float col_size){
     }
 
     return false;
+}
+
+// draws a 16x16 sprite
+void draw_sprite(uint32_t *sprite, float x, float y, int32_t y_off) {
+    x -= pos_x;
+    y -= pos_y;
+
+    // translate to plane/dir coordinates using inverse transform
+    const float inv_det = 1.f / (plane_x * dir_y - dir_x * plane_y);
+    const float plane_coord = inv_det * (dir_y * x - dir_x * y);
+    const float dir_coord = inv_det * (-plane_y * x + plane_x * y);
+
+    // too close to object
+    if (dir_coord < 0)
+        return;
+
+    // use similar triangle to map values to screen, then center
+    // screen pixels are already in -0.5 to 0.5 in plane dimension
+    // screen_x = plane_coord / dir_coord * width / 2 + width / 2
+    int32_t screen_x = (int32_t)(32.f * (plane_coord / dir_coord + 1));
+    
+    const float perp_dist = dir_coord * dirlen;
+    int32_t size = (int32_t)(SCREEN_HEIGHT / perp_dist);
+
+    const int32_t x0 = screen_x - size / 2;
+    int32_t cx = x0;
+    if (cx < 0) cx = 0;
+
+    int32_t x_end = cx + size;
+    if (x_end >= DRAW_WIDTH) x_end = DRAW_WIDTH - 1;
+
+    const int32_t y0 = SCREEN_HEIGHT / 2 - size / 2 + y_off; 
+    int32_t y_start = y0;
+    if (y_start < 0) y_start = 0;
+
+    int32_t y_end = y_start + size;
+    if (y_end > SCREEN_HEIGHT) y_end = SCREEN_HEIGHT - 1;
+
+    int32_t cy;
+
+    for (; cx <= x_end; cx++) {
+        if (perp_dist > zbuffer[cx])
+            continue;
+
+        // avoid floats
+        int32_t u = (((cx - x0) * 1024 * 16) / size) / 1024;
+        if(u >= 16) continue;
+
+        uint32_t col = sprite[u];
+
+        for (cy = y_start; cy < y_end; ++cy) {
+            int32_t v = (((cy - y0) * 1024 * 16) / size) / 1024;
+            uint32_t px = (col >> (v * 2)) & 0b11;
+            if (!px) continue;
+
+            display_px(cx, cy, px & 1);
+        }
+    }
 }
 
 float taylor_sin(float val){
@@ -313,6 +398,9 @@ void game_logic() {
         p_height = h_offset;
         p_perpdist = perp_dist;
     }
+    
+    // TEMP
+    draw_sprite(enspr, 4.5f, 1.5f, 0);
 
     ammo &= 0xF;
     PORTE = ((1 << ammo) - 1);
