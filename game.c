@@ -65,8 +65,72 @@ uint32_t enspr[16] ={
         0b00000010101000000000101000000000 // TR
     };
 
-float zbuffer[DRAW_WIDTH];
+uint32_t aspr[16] = {
+        0b00000000000000000000000000000000,
+        0b00000000000000000000000000000000,
+        0b00000000000000000000000000000000,
+        0b11111111111111110000000000000000,
+        0b11101010101010110000000000000000,
+        0b11101111111010110000000000000000,
+        0b11101011101110110000000000000000,
+        0b11101011101110110000000000000000,
+        0b11101111111010110000000000000000,
+        0b11101010101010110000000000000000,
+        0b11111111111111110000000000000000,
+        0b00000000000000000000000000000000,
+        0b00000000000000000000000000000000,
+        0b00000000000000000000000000000000
+};
 
+
+typedef struct {
+    uint32_t* spr;
+    float x;
+    float y;
+    float c_dist;
+} entity_t;
+
+#define ENTITY_COUNT 4
+entity_t entities[ENTITY_COUNT] = {
+    {aspr, 1.5f, 2.5f, 0.0},
+    {aspr, 2.5f, 7.5f, 0.0},
+    {aspr, 4.5f, 1.5f, 0.0},
+    {enspr, 1.5f, 3.5f, 0.0}
+};
+
+uint32_t e_index[ENTITY_COUNT] = {0, 1, 2, 3};
+
+// Bubble sort for now
+void sort_entities() {
+    uint32_t i1, i2, swap;
+
+    for (i1 = 0; i1 < ENTITY_COUNT - 1; i1++)
+        for(i2 = 0; i2 < ENTITY_COUNT - 1 - i1; i2++){
+            if(entities[e_index[i2]].c_dist < entities[e_index[i2 + 1]].c_dist){
+                swap = e_index[i2];
+                e_index[i2] = e_index[i2 + 1];
+                e_index[i2 + 1] = swap;
+            }
+        }
+    
+}
+
+#define AMMO_QUEUE_LEN 7
+const float ax_q[AMMO_QUEUE_LEN] = {1.5f, 2.5f, 4.5f, 8.5f, 8.5f, 5.5f, 2.5f};
+const float ay_q[AMMO_QUEUE_LEN] = {2.5f, 7.5f, 1.5f, 1.5f, 8.5f, 5.5f, 8.5f};
+int32_t ammo_q_index = 3;
+
+void pick_ammo(int32_t index) {
+    ammo += 2;
+    entity_t* p = entities + index;
+    p->x = ax_q[ammo_q_index];
+    p->y = ay_q[ammo_q_index];
+
+    ammo_q_index = (ammo_q_index + 1) % AMMO_QUEUE_LEN;
+}
+
+
+float zbuffer[DRAW_WIDTH];
 bool can_hit(const float t_x, const float t_y, const float col_size){
     const float rel_x = t_x - pos_x;
     const float rel_y = t_y - pos_y;
@@ -84,7 +148,7 @@ bool can_hit(const float t_x, const float t_y, const float col_size){
 }
 
 // draws a 16x16 sprite
-void draw_sprite(uint32_t *sprite, float x, float y, int32_t y_off) {
+void draw_sprite(uint32_t *sprite, float x, float y) {
     x -= pos_x;
     y -= pos_y;
 
@@ -112,7 +176,7 @@ void draw_sprite(uint32_t *sprite, float x, float y, int32_t y_off) {
     int32_t x_end = cx + size;
     if (x_end >= DRAW_WIDTH) x_end = DRAW_WIDTH - 1;
 
-    const int32_t y0 = SCREEN_HEIGHT / 2 - size / 2 + y_off; 
+    const int32_t y0 = SCREEN_HEIGHT / 2 - size / 2; 
     int32_t y_start = y0;
     if (y_start < 0) y_start = 0;
 
@@ -130,6 +194,7 @@ void draw_sprite(uint32_t *sprite, float x, float y, int32_t y_off) {
         if(u >= 16) continue;
 
         uint32_t col = sprite[u];
+        if(!col) continue; //empty rows
 
         for (cy = y_start; cy < y_end; ++cy) {
             int32_t v = (((cy - y0) * 1024 * 16) / size) / 1024;
@@ -399,10 +464,38 @@ void game_logic() {
         p_perpdist = perp_dist;
     }
     
-    // TEMP
-    draw_sprite(enspr, 4.5f, 1.5f, 0);
+    // SPRITE RENDERING + AMMO PICKUP
+    {
+        uint32_t i;
+        for(i = 0; i < ENTITY_COUNT; i++) {
+            entity_t* e = entities + i;
+            const float dist_x = e->x - pos_x;
+            const float dist_y = e->y - pos_y;
+            const float dist_s = dist_x * dist_x + dist_y * dist_y;
 
-    ammo &= 0xF;
+            // AMMO COLLISION
+            if(e->spr == aspr && dist_s < 0.4f) {
+                pick_ammo(i);
+                --i;
+
+                continue;
+            }
+
+            e->c_dist = dist_s;
+        }
+
+        sort_entities();
+
+        for(i = 0; i < ENTITY_COUNT; i++){
+            entity_t* e = entities + e_index[i];
+            
+            draw_sprite(e->spr, e->x, e->y);
+        }
+            
+
+    }
+
+    if(ammo > 8) ammo = 8;
     PORTE = ((1 << ammo) - 1);
 
     if(gun_fire){
