@@ -98,6 +98,8 @@ entity_t entities[ENTITY_COUNT] = {
     {enspr, 1.5f, 3.5f, 0.0}
 };
 
+
+entity_t* enemy = &entities[ENTITY_COUNT - 1];
 uint32_t e_index[ENTITY_COUNT] = {0, 1, 2, 3};
 
 // Bubble sort for now
@@ -135,16 +137,18 @@ bool can_hit(const float t_x, const float t_y, const float col_size){
     const float rel_x = t_x - pos_x;
     const float rel_y = t_y - pos_y;
 
-    const float hyp_s = rel_x * rel_x - rel_y * rel_y;
-    if (hyp_s < zbuffer[SCREEN_WIDTH / 2] * zbuffer[SCREEN_WIDTH / 2]) {
-        const float cross = rel_x * t_y - rel_y * t_x;
-        const float dist_s = (cross * cross) / hyp_s;
+    const float inv_det = 1.f / (plane_x * dir_y - dir_x * plane_y);
+    const float plane_coord = inv_det * (dir_y * rel_x - dir_x * rel_y);
+    const float dir_coord = inv_det * (-plane_y * rel_x + plane_x * rel_y);
+    
+    if (dir_coord < 0.f)
+        return false;
 
-        const float spread_s = col_size * col_size;
-        return dist_s < spread_s;
-    }
-
-    return false;
+    int32_t screen_x = (int32_t)(32.f * (plane_coord / dir_coord + 1));
+    const float perp_dist = dir_coord * dirlen;
+    
+    int32_t size = (int32_t)(SCREEN_HEIGHT / perp_dist);
+    return (screen_x + size >= DRAW_WIDTH / 2) && (screen_x - size <= DRAW_WIDTH / 2) && (zbuffer[DRAW_WIDTH / 2] > perp_dist);
 }
 
 // draws a 16x16 sprite
@@ -269,6 +273,10 @@ void game_logic() {
             
             if(!fire_offset) fire_offset = 4;
             else             fire_offset = 0;
+
+            if(can_hit(enemy->x, enemy->y, 1.f)){
+                enemy->spr = aspr;
+            }
         }
 
         p_switch = switch_state;
@@ -409,15 +417,15 @@ void game_logic() {
 
         while(!map[tile_y][tile_x]) {
             if(edgedist_x < edgedist_y) {
-            edgedist_x += step_x;
-            tile_x += tiledir_x;
-            
-            side = 0;
+                edgedist_x += step_x;
+                tile_x += tiledir_x;
+                
+                side = 0;
             } else {
-            edgedist_y += step_y;
-            tile_y += tiledir_y;
+                edgedist_y += step_y;
+                tile_y += tiledir_y;
 
-            side = 1;
+                side = 1;
             }
         }
 
@@ -517,10 +525,10 @@ void game_logic() {
 
     screen_buffer[SCREEN_WIDTH * 3 + 30] = 0xFF;
     screen_buffer[SCREEN_WIDTH * 3 + 31] = 0xFF;
-
+    screen_buffer[SCREEN_WIDTH * 3 + 32] = 0x00;
     screen_buffer[SCREEN_WIDTH * 3 + 33] = 0xFF;
     screen_buffer[SCREEN_WIDTH * 3 + 34] = 0xFF;
-    
+    screen_buffer[SCREEN_WIDTH * 3 + 35] = 0x00;
     screen_buffer[SCREEN_WIDTH * 3 + 36] = 0xFF;
 
     display_setpx(31, 23);
