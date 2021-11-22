@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include "display.h"
 
+#define DEADZONE 32
+
+
 float pos_x = 2.5f;
 float pos_y = 1.5f;
 
@@ -293,6 +296,10 @@ void game_logic() {
 
     
         unsigned int potent_value = read_potentiometer(); // 0 - 1024
+        
+        if (potent_value < 512 + DEADZONE && potent_value > 512 - DEADZONE) 
+            potent_value = 512;
+        
         rotation_speed = (((float)potent_value) - 512.f) / (512.f *  100.f);
 
         if(button_state & 0x1) rotation_speed =  0.01f;
