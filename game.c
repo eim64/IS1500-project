@@ -24,6 +24,12 @@ uint32_t p_switch;
 uint32_t gun_fire;
 uint32_t fire_offset = 0;
 
+int ptile_x;
+int ptile_y;
+
+int frame = 0;
+
+
 #define DRAW_WIDTH 64
 
 #define MAP_WIDTH 10
@@ -84,6 +90,24 @@ uint32_t aspr[16] = {
         0b00000000000000000000000000000000,
         0b00000000000000000000000000000000
 };
+
+uint8_t g_dist[MAP_WIDTH][MAP_HEIGHT];
+
+void rec_dst(int x, int y, uint8_t dst) {
+    if (map[y][x])
+        return;
+
+    if (g_dist[y][x] <= dst)
+        return;
+
+    g_dist[y][x] = dst;
+    const uint8_t nd = (dst + 4) & 0b11111100;
+    rec_dst(x + 1, y + 0, nd | 0);
+    rec_dst(x - 1, y + 0, nd | 1);
+    rec_dst(x + 0, y + 1, nd | 2);
+    rec_dst(x + 0, y - 1, nd | 3);
+}
+
 
 
 typedef struct {
@@ -364,6 +388,7 @@ void game_logic() {
         // wall collision
         const int tile_x = (int) pos_x;
         const int tile_y = (int) pos_y;
+
         const float player_radius = 0.2f;
 
         if (map[tile_y + 1][tile_x] && (tile_y + 1.0 - pos_y) < player_radius)
@@ -407,8 +432,8 @@ void game_logic() {
         float ray_y = dir_y + plane_y * scan_x;
 
         // line rasterizer, avoids float conversion in loop
-        int tile_x = (int)pos_x;
-        int tile_y = (int)pos_y;
+        int tile_x = (int) pos_x;
+        int tile_y = (int) pos_y;
 
         float step_x = (ray_x == 0.0) ? 1e20f : 1 / ray_x;
         float step_y = (ray_y == 0.0) ? 1e20f : 1 / ray_y;
@@ -501,6 +526,24 @@ void game_logic() {
         p_height = h_offset;
         p_perpdist = perp_dist;
     }
+
+    // PREPARE DISTANCES
+    {
+        const int tile_x = (int) pos_x;
+        const int tile_y = (int) pos_y;
+        if (tile_x != ptile_x || tile_y != ptile_y){
+            uint8_t a, b;
+            for(a = 0; a < MAP_WIDTH; a++)
+                for(b = 0; b < MAP_HEIGHT; b++)
+                    g_dist[b][a] = 255;
+
+            rec_dst(tile_x, tile_y, 0);
+        }
+
+        ptile_x = tile_x;
+        ptile_y = tile_y;
+    }
+
     
     // SPRITE RENDERING + AMMO PICKUP
     {
@@ -517,6 +560,24 @@ void game_logic() {
                 --i;
 
                 continue;
+            }
+
+            // ENEMY AI
+            if(e->spr == enspr) {
+                const int tile_x = (int) e->x;
+                const int tile_y = (int) e->y;
+                // display_setpx((e->x / MAP_WIDTH) * 32 + 64,(e->y / MAP_HEIGHT) * 32);
+
+                const float mvspeed = 0.005f;
+                if(g_dist[tile_y][tile_x] >> 2)
+                switch (g_dist[tile_y][tile_x] & 0x3)
+                {
+                    case 0: e->x -= mvspeed; break;
+                    case 1: e->x += mvspeed; break;
+                    case 2: e->y -= mvspeed; break;
+                    case 3: e->y += mvspeed; break;
+                }
+
             }
 
             e->c_dist = dist_s;
@@ -571,4 +632,5 @@ void game_logic() {
     display_setpx(35, 23);
 
     display_update();
+    ++frame;
 }
