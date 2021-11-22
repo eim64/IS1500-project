@@ -24,6 +24,8 @@ uint32_t p_switch;
 uint32_t gun_fire;
 uint32_t fire_offset = 0;
 
+uint32_t is_hit = 0;
+
 int ptile_x;
 int ptile_y;
 
@@ -566,18 +568,34 @@ void game_logic() {
             if(e->spr == enspr) {
                 const int tile_x = (int) e->x;
                 const int tile_y = (int) e->y;
-                // display_setpx((e->x / MAP_WIDTH) * 32 + 64,(e->y / MAP_HEIGHT) * 32);
+
+                float target_x = ((float)tile_x) + 0.5f;
+                float target_y = ((float)tile_y) + 0.5f;
 
                 const float mvspeed = 0.005f;
                 if(g_dist[tile_y][tile_x] >> 2)
                 switch (g_dist[tile_y][tile_x] & 0x3)
                 {
-                    case 0: e->x -= mvspeed; break;
-                    case 1: e->x += mvspeed; break;
-                    case 2: e->y -= mvspeed; break;
-                    case 3: e->y += mvspeed; break;
+                    case 0: target_x -= 1.f; break;
+                    case 1: target_x += 1.f; break;
+                    case 2: target_y -= 1.f; break;
+                    case 3: target_y += 1.f; break;
                 }
 
+                target_x -= e->x;
+                target_y -= e->y;
+
+                const float scalar = Q_rsqrt(target_x * target_x + target_y*target_y) * mvspeed;
+                target_x *= scalar;
+                target_y *= scalar;
+
+                e->x += target_x;
+                e->y += target_y;
+
+                // PLAYER GET HIT
+                if(!is_hit && dist_s < (0.6 * 0.6)) {
+                    is_hit = 20;
+                }
             }
 
             e->c_dist = dist_s;
@@ -612,6 +630,20 @@ void game_logic() {
         display_setpx(34 + fire_offset, 20);
 
         PORTE = 0xFF;
+    }
+
+
+    if(is_hit) {
+        is_hit -= 1;
+        uint32_t* scr_buf = (uint32_t)screen_buffer;
+
+        int i;
+        for(i = 0; i < DRAW_WIDTH/4; i++){
+            scr_buf[i +  0] ^= (frame * 1112516) ^ 0xABCABCAB;
+            scr_buf[i + 32] ^= (frame * 1112516) ^ 0xABCABCAB;
+            scr_buf[i + 64] ^= (frame * 1112516) ^ 0xABCABCAB;
+            scr_buf[i + 96] ^= (frame * 1112516) ^ 0xABCABCAB;
+        }
     }
 
 
