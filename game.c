@@ -302,17 +302,26 @@ void game_logic() {
         
         rotation_speed = (((float)potent_value) - 512.f) / (512.f *  100.f);
 
-        if(button_state & 0x1) rotation_speed =  0.01f;
-        if(button_state & 0x4) rotation_speed -= 0.01f;
+        const float mvscal = 0.01f;
 
-        if(button_state & 0x2) {
-            pos_x += dir_x * 0.01f;
-            pos_y += dir_y * 0.01f;
+        if(button_state & 0x1) {
+            pos_x -= dir_y * mvscal;
+            pos_y += dir_x * mvscal;
         }
 
         if(button_state & 0x8) {
-            pos_x -= dir_x * 0.01f;
-            pos_y -= dir_y * 0.01f;
+            pos_x += dir_y * mvscal;
+            pos_y -= dir_x * mvscal;
+        }
+
+        if(button_state & 0x2) {
+            pos_x += dir_x * mvscal;
+            pos_y += dir_y * mvscal;
+        }
+
+        if(button_state & 0x4) {
+            pos_x -= dir_x * mvscal;
+            pos_y -= dir_y * mvscal;
         }
 
         const float r_cos = taylor_cos(rotation_speed);
