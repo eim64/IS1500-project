@@ -23,7 +23,7 @@ int main()
     //OSCCONSET = 0x080000; /* set PBDIV bit 0 */
     
     /* Set up output pins */
-    AD1PCFG = 0xFFFF;
+    AD1PCFG = 0xFFFF; 
     ODCE = 0x0;
     TRISECLR = 0xFF;
     PORTE = 0x0;
@@ -59,6 +59,15 @@ int main()
   TRISD |= 0xE0;
   TRISF |= 0x1;
 
+  /* Set up Potentiometer */
+  TRISBSET = 0x4;
+  AD1PCFGCLR = 0x4; // ADC config reg
+  AD1CHS = (1 << 17); // Channel select
+
+  AD1CON1SET = (0x1 << 10); // 32 bit integer
+  AD1CON1SET = (0x7 << 5); // end samp start conv(Auto)
+  AD1CON1SET = (0x1 << 15); // ADC ON
+  AD1CON3SET = (0x1 << 15); // Use the ADC internal clock
   while(1)
   {
     game_logic();

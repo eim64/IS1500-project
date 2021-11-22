@@ -257,6 +257,16 @@ void push(float* target_x, float* target_y, float source_x, float source_y, floa
     }
 }
 
+unsigned int read_potentiometer(){
+    // Start sample
+    AD1CON1SET = 0x2;
+    // Wait for DONE
+    while(!(AD1CON1 & 0x1));
+    // Return the value 
+    return ADC1BUF0;
+}
+
+
 void game_logic() {
     display_clear();
 
@@ -280,6 +290,10 @@ void game_logic() {
         }
 
         p_switch = switch_state;
+
+    
+        unsigned int potent_value = read_potentiometer(); // 0 - 1024
+        rotation_speed = (((float)potent_value) - 512.f) / (512.f *  100.f);
 
         if(button_state & 0x1) rotation_speed =  0.01f;
         if(button_state & 0x4) rotation_speed -= 0.01f;
@@ -460,8 +474,8 @@ void game_logic() {
             if(p_height > h_offset) h_offset = p_height + 1;
 
             for (y = 0; y < h_offset; y++){
-            display_setpx(x, center - y);
-            display_setpx(x, center + y);
+                display_setpx(x, center - y);
+                display_setpx(x, center + y);
             }
         }
 
@@ -522,6 +536,9 @@ void game_logic() {
 
         PORTE = 0xFF;
     }
+
+
+
 
     screen_buffer[SCREEN_WIDTH * 3 + 30] = 0xFF;
     screen_buffer[SCREEN_WIDTH * 3 + 31] = 0xFF;
