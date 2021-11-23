@@ -27,19 +27,16 @@ uint32_t ammo = 4;
 uint32_t p_switch;
 uint32_t gun_fire;
 uint32_t fire_offset = 0;
-
 uint32_t is_hit = 0;
+
+
+uint32_t kill_count = 0;
+uint32_t enemy_count = 1;
 
 int ptile_x;
 int ptile_y;
 
 int frame = 0;
-
-
-#define DRAW_WIDTH 64
-
-#define MAP_WIDTH 10
-#define MAP_HEIGHT 10
 uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
   {1,1,1,1,1,1,1,1,1,1},
   {1,0,0,0,0,0,0,0,1,1},
@@ -55,6 +52,8 @@ uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
 
 float zbuffer[DRAW_WIDTH];
 
+
+
 entity_t entities[ENTITY_COUNT] = {
     {aspr, 1.5f, 2.5f, 0.0},
     {aspr, 2.5f, 7.5f, 0.0},
@@ -63,7 +62,8 @@ entity_t entities[ENTITY_COUNT] = {
 };
 
 uint32_t e_index[ENTITY_COUNT] = {0, 1, 2, 3};
-entity_t* enemy = &entities[ENTITY_COUNT - 1]; 
+
+#define MAX_ENEMIES 3
 
 #define AMMO_QUEUE_LEN 7
 const float ax_q[AMMO_QUEUE_LEN] = {1.5f, 2.5f, 4.5f, 8.5f, 8.5f, 5.5f, 2.5f};
@@ -77,6 +77,63 @@ void pick_ammo(int32_t index) {
     p->y = ay_q[ammo_q_index];
 
     ammo_q_index = (ammo_q_index + 1) % AMMO_QUEUE_LEN;
+}
+
+entity_t* get_replacer() {
+    int i;
+    for(i = 0; i < ENTITY_COUNT; i++)
+        if(!entities[i].spr)
+            return &entities[i];
+    
+    for(i = 0; i < ENTITY_COUNT; i++)
+        if(entities[i].spr == aspr)
+            return &entities[i];
+
+    return entities;
+}
+
+void respawn_entity(entity_t* p) {
+    do {
+        p->x = ax_q[ammo_q_index];
+        p->y = ay_q[ammo_q_index];
+
+        ammo_q_index = (ammo_q_index + 1) % AMMO_QUEUE_LEN;
+    } while ((p->x - pos_x)*(p->x - pos_x) + (p->y - pos_y)*(p->x - pos_x) < 4);
+}
+
+float get_enemy_mvspeed() {
+    float ret = 0.0035f;
+    
+    if (enemy_count < MAX_ENEMIES)
+        return ret;
+
+    ret += ((float)(kill_count - (enemy_count - 1) * 5)) * 0.0001f;
+}
+
+
+void increase_enemies() {
+    if(enemy_count >= MAX_ENEMIES)
+        return;
+
+    enemy_count ++;
+    entity_t* replace = get_replacer();
+
+    replace->spr = enspr;
+    respawn_entity(replace);
+}
+
+void kill_enemy(entity_t* p) {
+    entity_t* replace = get_replacer();
+
+    replace->x = p->x;
+    replace->y = p->y;
+    replace->spr = aspr;
+
+    kill_count++;
+    if(kill_count % 5 == 0)
+        increase_enemies();
+
+    respawn_entity(p);
 }
 
 
@@ -97,9 +154,19 @@ void game_logic() {
             if(!fire_offset) fire_offset = 4;
             else             fire_offset = 0;
 
-            if(can_hit(enemy->x, enemy->y)){
-                enemy->spr = aspr;
+            int i;
+            for(i = ENTITY_COUNT - 1; i >= 0; i--){
+                entity_t* e = entities + e_index[i];
+                if(e->spr != enspr)
+                    continue;
+
+                if(can_hit(e->x, e->y)){
+                    kill_enemy(e);
+
+                    break;
+                }
             }
+                
         }
 
         p_switch = switch_state;
@@ -169,6 +236,7 @@ void game_logic() {
     
     // ENTITIY RENDERING + INTERACTIONS
     {
+        float enemy_mvspeed = get_enemy_mvspeed();
         uint32_t i;
         for(i = 0; i < ENTITY_COUNT; i++) {
             entity_t* e = entities + i;
@@ -186,7 +254,7 @@ void game_logic() {
 
             // ENEMY AI
             if(e->spr == enspr) {
-                follow_sink(e, 0.0025f);
+                follow_sink(e, enemy_mvspeed);
 
                 // PLAYER GET HIT
                 if(!is_hit && dist_s < (0.6 * 0.6)) {
