@@ -26,7 +26,7 @@ extern uint8_t map[MAP_WIDTH][MAP_HEIGHT];
 extern float zbuffer[DRAW_WIDTH];
 
 
-#define ENTITY_COUNT 4
+#define ENTITY_COUNT 8
 typedef struct {
     uint32_t* spr;
     float x;
@@ -36,3 +36,6 @@ typedef struct {
 
 extern entity_t entities[ENTITY_COUNT];
 extern uint32_t e_index[ENTITY_COUNT];
+
+void restart_game();
+void game_logic();

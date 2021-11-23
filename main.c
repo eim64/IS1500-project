@@ -10,9 +10,9 @@
 #include <stdint.h>   /* Declarations of integer sizes and the like, part 2 */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "display.h"
+#include "game.h"
 
 void user_isr() { }
-extern void game_logic();
 
 int main()
 {
@@ -68,6 +68,9 @@ int main()
   AD1CON1SET = (0x7 << 5); // end samp start conv(Auto)
   AD1CON1SET = (0x1 << 15); // ADC ON
   AD1CON3SET = (0x1 << 15); // Use the ADC internal clock
+
+  restart_game();
+  
   while(1)
   {
     game_logic();

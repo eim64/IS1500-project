@@ -9,7 +9,7 @@
 #include "sink_pathing.h"
 
 #define DEADZONE 32
-
+#define DEATHTIME 48
 
 float pos_x = 2.5f;
 float pos_y = 1.5f;
@@ -29,12 +29,8 @@ uint32_t gun_fire;
 uint32_t fire_offset = 0;
 uint32_t is_hit = 0;
 
-
 uint32_t kill_count = 0;
 uint32_t enemy_count = 1;
-
-int ptile_x;
-int ptile_y;
 
 int frame = 0;
 uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
@@ -52,8 +48,6 @@ uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
 
 float zbuffer[DRAW_WIDTH];
 
-
-
 entity_t entities[ENTITY_COUNT] = {
     {aspr, 1.5f, 2.5f, 0.0},
     {aspr, 2.5f, 7.5f, 0.0},
@@ -61,7 +55,7 @@ entity_t entities[ENTITY_COUNT] = {
     {enspr, 1.5f, 3.5f, 0.0}
 };
 
-uint32_t e_index[ENTITY_COUNT] = {0, 1, 2, 3};
+uint32_t e_index[ENTITY_COUNT] = {0, 1, 2, 3, 4, 5, 6, 7};
 
 #define MAX_ENEMIES 3
 
@@ -70,13 +64,9 @@ const float ax_q[AMMO_QUEUE_LEN] = {1.5f, 2.5f, 4.5f, 8.5f, 8.5f, 5.5f, 2.5f};
 const float ay_q[AMMO_QUEUE_LEN] = {2.5f, 7.5f, 1.5f, 1.5f, 8.5f, 5.5f, 8.5f};
 int32_t ammo_q_index = 3;
 
-void pick_ammo(int32_t index) {
+void pick_ammo(entity_t* p) {
     ammo += 2;
-    entity_t* p = entities + index;
-    p->x = ax_q[ammo_q_index];
-    p->y = ay_q[ammo_q_index];
-
-    ammo_q_index = (ammo_q_index + 1) % AMMO_QUEUE_LEN;
+    p->spr = 0;
 }
 
 entity_t* get_replacer() {
@@ -136,6 +126,26 @@ void kill_enemy(entity_t* p) {
     respawn_entity(p);
 }
 
+void restart_game() {
+    int i;
+    ammo_q_index = 0;
+    for(i = 0; i < ENTITY_COUNT; i++)
+        entities[i].spr = 0;
+    
+    for(i = 0; i < 3; i++){
+        entity_t* e = entities + i;
+        e->spr = aspr;
+
+        respawn_entity(e);
+    }
+
+    ammo = 4;
+    enemy_count = 0;
+    kill_count = 0;
+    frame = 0;
+
+    increase_enemies();
+}
 
 void game_logic() {
     display_clear();
@@ -245,12 +255,8 @@ void game_logic() {
             const float dist_s = dist_x * dist_x + dist_y * dist_y;
 
             // AMMO COLLISION
-            if(e->spr == aspr && dist_s < 0.4f) {
-                pick_ammo(i);
-                --i;
-
-                continue;
-            }
+            if(e->spr == aspr && dist_s < 0.4f)
+                pick_ammo(e);
 
             // ENEMY AI
             if(e->spr == enspr) {
@@ -258,7 +264,7 @@ void game_logic() {
 
                 // PLAYER GET HIT
                 if(!is_hit && dist_s < (0.6 * 0.6)) {
-                    is_hit = 20;
+                    is_hit = DEATHTIME;
                 }
             }
 
@@ -287,8 +293,14 @@ void game_logic() {
 
     if(is_hit) {
         is_hit--;
-
         show_noise();
+
+        PORTE = is_hit;
+        if (!is_hit) {
+            restart_game();
+            
+            return;
+        }
     }
 
     draw_gun(0);
