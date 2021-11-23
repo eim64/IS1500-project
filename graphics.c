@@ -64,6 +64,8 @@ void sort_entities() {
 
 // draws a 16x16 sprite
 void draw_sprite(uint32_t *sprite, float x, float y) {
+    if(!sprite) return;
+
     x -= pos_x;
     y -= pos_y;
 
@@ -226,4 +228,46 @@ void raycast_map(){
         p_height = h_offset;
         p_perpdist = perp_dist;
     }
+}
+
+
+void show_noise(){
+    uint32_t* scr_buf = (uint32_t*)screen_buffer;
+
+    int i;
+    for(i = 0; i < DRAW_WIDTH/4; i++){
+        scr_buf[i +  0] ^= (frame * 1112516) ^ 0xABCABCAB;
+        scr_buf[i + 32] ^= (frame * 1112516) ^ 0xABCABCAB;
+        scr_buf[i + 64] ^= (frame * 1112516) ^ 0xABCABCAB;
+        scr_buf[i + 96] ^= (frame * 1112516) ^ 0xABCABCAB;
+    }
+}
+
+void draw_gun(int offset){
+    screen_buffer[SCREEN_WIDTH * 3 + 30 + offset] = 0xFF;
+    screen_buffer[SCREEN_WIDTH * 3 + 31 + offset] = 0xFF;
+    screen_buffer[SCREEN_WIDTH * 3 + 32 + offset] = 0x00;
+    screen_buffer[SCREEN_WIDTH * 3 + 33 + offset] = 0xFF;
+    screen_buffer[SCREEN_WIDTH * 3 + 34 + offset] = 0xFF;
+    screen_buffer[SCREEN_WIDTH * 3 + 35 + offset] = 0x00;
+    screen_buffer[SCREEN_WIDTH * 3 + 36 + offset] = 0xFF;
+
+    display_setpx(31 + offset, 23);
+    display_setpx(32 + offset, 23);
+
+    display_setpx(34 + offset, 23);
+    display_setpx(35 + offset, 23);
+}
+
+void draw_fire(int offset) {
+    display_setpx(30 + offset, 21);
+    display_setpx(29 + offset, 20);
+    display_setpx(29 + offset, 20);
+
+    display_setpx(31 + offset, 19);
+    display_setpx(31 + offset, 18);
+
+    display_setpx(33 + offset, 21);
+    display_setpx(33 + offset, 20);
+    display_setpx(34 + offset, 20);
 }

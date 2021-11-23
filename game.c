@@ -6,6 +6,7 @@
 #include "display.h"
 #include "graphics.h"
 #include "io.h"
+#include "sink_pathing.h"
 
 #define DEADZONE 32
 
@@ -53,22 +54,6 @@ uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
 };
 
 float zbuffer[DRAW_WIDTH];
-uint8_t g_dist[MAP_WIDTH][MAP_HEIGHT];
-
-void rec_dst(int x, int y, uint8_t dst) {
-    if (map[y][x])
-        return;
-
-    if (g_dist[y][x] <= dst)
-        return;
-
-    g_dist[y][x] = dst;
-    const uint8_t nd = (dst + 4) & 0b11111100;
-    rec_dst(x + 1, y + 0, nd | 0);
-    rec_dst(x - 1, y + 0, nd | 1);
-    rec_dst(x + 0, y + 1, nd | 2);
-    rec_dst(x + 0, y - 1, nd | 3);
-}
 
 entity_t entities[ENTITY_COUNT] = {
     {aspr, 1.5f, 2.5f, 0.0},
@@ -161,7 +146,6 @@ void game_logic() {
         
         // correct lengths from improper transform
         NORMALIZE(dir_x, dir_y, dirlen);
-
         
         // gram-schmidt to perpendicularity
         {
@@ -173,37 +157,15 @@ void game_logic() {
 
         NORMALIZE(plane_x, plane_y, planelen);
         
-
         // wall collision
         APPLY_COLLISION(pos_x, pos_y, 0.2f);
-    }
-
-    // draw 2D rep
-    {
-        display_setpx((pos_x / MAP_WIDTH) * 32 + 64,(pos_y / MAP_HEIGHT) * 32);
     }
 
     //RENDER MAP
     raycast_map();
 
-
     // PREPARE DISTANCES/DIRECTIONS
-    {
-        const int tile_x = (int) pos_x;
-        const int tile_y = (int) pos_y;
-        if (tile_x != ptile_x || tile_y != ptile_y){
-            uint8_t a, b;
-            for(a = 0; a < MAP_WIDTH; a++)
-                for(b = 0; b < MAP_HEIGHT; b++)
-                    g_dist[b][a] = 255;
-
-            rec_dst(tile_x, tile_y, 0);
-        }
-
-        ptile_x = tile_x;
-        ptile_y = tile_y;
-    }
-
+    create_sink(pos_x, pos_y);
     
     // ENTITIY RENDERING + INTERACTIONS
     {
@@ -224,28 +186,7 @@ void game_logic() {
 
             // ENEMY AI
             if(e->spr == enspr) {
-                const int tile_x = (int) e->x;
-                const int tile_y = (int) e->y;
-
-                float target_x = ((float)tile_x) + 0.5f;
-                float target_y = ((float)tile_y) + 0.5f;
-
-                const float mvspeed = 0.005f;
-                if(g_dist[tile_y][tile_x] >> 2)
-                switch (g_dist[tile_y][tile_x] & 0x3)
-                {
-                    case 0: target_x -= 1.f; break;
-                    case 1: target_x += 1.f; break;
-                    case 2: target_y -= 1.f; break;
-                    case 3: target_y += 1.f; break;
-                }
-
-                target_x -= e->x;
-                target_y -= e->y;
-                NORMALIZE(target_x, target_y, mvspeed);
-
-                e->x += target_x;
-                e->y += target_y;
+                follow_sink(e, 0.0025f);
 
                 // PLAYER GET HIT
                 if(!is_hit && dist_s < (0.6 * 0.6)) {
@@ -263,8 +204,6 @@ void game_logic() {
             
             draw_sprite(e->spr, e->x, e->y);
         }
-            
-
     }
 
     if(ammo > 8) ammo = 8;
@@ -273,50 +212,18 @@ void game_logic() {
     if(gun_fire){
         gun_fire--;
 
-        display_setpx(30 + fire_offset, 21);
-        display_setpx(29 + fire_offset, 20);
-        display_setpx(29 + fire_offset, 20);
-
-        display_setpx(31 + fire_offset, 19);
-        display_setpx(31 + fire_offset, 18);
-
-        display_setpx(33 + fire_offset, 21);
-        display_setpx(33 + fire_offset, 20);
-        display_setpx(34 + fire_offset, 20);
-
+        draw_fire(fire_offset);
         PORTE = 0xFF;
     }
 
 
     if(is_hit) {
-        is_hit -= 1;
-        uint32_t* scr_buf = (uint32_t*)screen_buffer;
+        is_hit--;
 
-        int i;
-        for(i = 0; i < DRAW_WIDTH/4; i++){
-            scr_buf[i +  0] ^= (frame * 1112516) ^ 0xABCABCAB;
-            scr_buf[i + 32] ^= (frame * 1112516) ^ 0xABCABCAB;
-            scr_buf[i + 64] ^= (frame * 1112516) ^ 0xABCABCAB;
-            scr_buf[i + 96] ^= (frame * 1112516) ^ 0xABCABCAB;
-        }
+        show_noise();
     }
 
-
-
-
-    screen_buffer[SCREEN_WIDTH * 3 + 30] = 0xFF;
-    screen_buffer[SCREEN_WIDTH * 3 + 31] = 0xFF;
-    screen_buffer[SCREEN_WIDTH * 3 + 32] = 0x00;
-    screen_buffer[SCREEN_WIDTH * 3 + 33] = 0xFF;
-    screen_buffer[SCREEN_WIDTH * 3 + 34] = 0xFF;
-    screen_buffer[SCREEN_WIDTH * 3 + 35] = 0x00;
-    screen_buffer[SCREEN_WIDTH * 3 + 36] = 0xFF;
-
-    display_setpx(31, 23);
-    display_setpx(32, 23);
-
-    display_setpx(34, 23);
-    display_setpx(35, 23);
+    draw_gun(0);
 
     display_update();
     ++frame;
