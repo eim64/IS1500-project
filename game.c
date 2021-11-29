@@ -6,7 +6,7 @@
 #include "display.h"
 #include "graphics.h"
 #include "io.h"
-#include "sink_pathing.h"
+// #include "sink_pathing.h"
 
 #define DEADZONE 32
 #define DEATHTIME 48
@@ -242,7 +242,7 @@ void game_logic() {
     raycast_map();
 
     // PREPARE DISTANCES/DIRECTIONS
-    create_sink(pos_x, pos_y);
+    // create_sink(pos_x, pos_y);
     
     // ENTITIY RENDERING + INTERACTIONS
     {
@@ -260,7 +260,7 @@ void game_logic() {
 
             // ENEMY AI
             if(e->spr == enspr) {
-                follow_sink(e, enemy_mvspeed);
+                // follow_sink(e, enemy_mvspeed);
 
                 // PLAYER GET HIT
                 if(!is_hit && dist_s < (0.6 * 0.6)) {
@@ -305,6 +305,5 @@ void game_logic() {
 
     draw_gun(0);
 
-    display_update();
     ++frame;
 }

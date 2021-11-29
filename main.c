@@ -1,78 +1,84 @@
-/* main.c
-
-   This file written 2015 by F Lundevall and David Broman
-
-   Latest update 2015-09-15 by David Broman
-
-   For copyright and licensing, see file COPYING */
-
-#include <stddef.h>   /* Declarations of integer sizes and the like, part 1 */
-#include <stdint.h>   /* Declarations of integer sizes and the like, part 2 */
-#include <pic32mx.h>  /* Declarations of system-specific addresses etc */
+#include <pic32mx.h>  
 #include "display.h"
 #include "game.h"
 
 void user_isr() { }
 
-int main()
-{
+void input_init() {
+  // Pushbuttons init
+  // BTN1, PORT F, Bit 1
+  // BTN2-3, PORT D, Bit 5-7
+  TRISFSET = (1 << 1);
+  TRISDSET = (7 << 5);
 
-  // Prepare Uno32
-  {
-    //OSCCONCLR = 0x100000; /* clear PBDIV bit 1 */
-    //OSCCONSET = 0x080000; /* set PBDIV bit 0 */
-    
-    /* Set up output pins */
-    AD1PCFG = 0xFFFF; 
-    ODCE = 0x0;
-    TRISECLR = 0xFF;
-    PORTE = 0x0;
-    
-    /* Output pins for display signals */
-    PORTF = 0xFFFF;
-    PORTG = (1 << 9);
-    ODCF = 0x0;
-    ODCG = 0x0;
-    TRISFCLR = 0x70;
-    TRISGCLR = 0x200;
-    
-    /* Set up input pins */
-    TRISDSET = (1 << 8);
-    TRISFSET = (1 << 1);
-    
-    /* Set up SPI as master */
-    SPI2CON = 0;
-    SPI2BRG = 4;
-    /* SPI2STAT bit SPIROV = 0; */
-    SPI2STATCLR = 0x40;
-    /* SPI2CON bit CKP = 1; */
-    SPI2CONSET = 0x40;
-    /* SPI2CON bit MSTEN = 1; */
-    SPI2CONSET = 0x20;
-    /* SPI2CON bit ON = 1; */
-    SPI2CONSET = 0x8000;
-  }
+  // Switches init
+  // Port D, Bit 8-11
+  TRISDSET = (0xF << 8);
 
-  display_init();
-
-  TRISE &= ~0xFF;
-  TRISD |= 0xE0;
-  TRISF |= 0x1;
-
-  /* Set up Potentiometer */
-  TRISBSET = 0x4;
-  AD1PCFGCLR = 0x4; // ADC config reg
+  // Potentiometer
+  TRISBSET = 0x4; // Port E, bit 3, Potentiometer
+  AD1PCFG = 0xFFFB; // ADC config reg, bit 2 is 0
   AD1CHS = (1 << 17); // Channel select
 
-  AD1CON1SET = (0x1 << 10); // 32 bit integer
+  AD1CON1SET = (0x1 << 10); // value 32 bit integer
   AD1CON1SET = (0x7 << 5); // end samp start conv(Auto)
   AD1CON1SET = (0x1 << 15); // ADC ON
   AD1CON3SET = (0x1 << 15); // Use the ADC internal clock
+}
+
+void output_init() {
+  // User LED init, PORT E, bit 0-7
+  TRISECLR = 0xFF; // set as output
+  PORTE = 0x0; // clear value
+
+  // OLED init
+  PORTF = 0xFFFF;
+  PORTG = (1 << 9); // Port G, Bit 8, OLED serial 
+  TRISFCLR = 0x70; // OLED VDD enable, OLED data/command select and OLED VBAT enable
+  TRISGCLR = 0x200; // RG9, OLED Reset
+
+  // SPI init
+  SPI2CON = 0;
+  SPI2BRG = 4; // Baud rate
+  // Receive Overflow Flag, 0 is No overflow has occurred
+  SPI2STATCLR = 0x40;
+  // Clock Polarity Select, "Idle state for clock is a high level; active state is a low level"
+  SPI2CONSET = 0x40; 
+  // Master mode enable 
+  SPI2CONSET = 0x20; 
+  // Enable SPI preipheral
+  SPI2CONSET = 0x8000;
+
+
+  // Initalize timer 2
+  // 80 MHz
+  // period = 80 000 000 * (240*10^-3) = 19 200 000
+  // 1:256 prescale:  19 200 000 / 256 = 75 000 = 0x124F8
+  // 0x8074 -> 7, set bits6-4 TCKPS<2:0> to 111 to prescale with 256
+  // 0x8074 -> 8, set bit 15 is 1 to start the timer 
+  // 0x8074 -> 4, combine timers to store 32 bit value
+  TMR2 = 0; 
+  T2CON = 0x8074;
+  PR2 = 0x124F8;
+}
+
+int main()
+{
+  output_init();
+
+  input_init();
+
+  display_init();
 
   restart_game();
   
   while(1)
   {
     game_logic();
+    if(IFS(0) & 0x100) {
+      display_update();
+      // Reset the interupt status flag
+      IFSCLR(0) = 0x100;
+    } 
   }
 }
