@@ -1,9 +1,0 @@
-{
-  "files.associations": {
-    "*.pl": "prolog",
-    "*.psql": "sql",
-    "io.h": "c",
-    "game.h": "c",
-    "display.h": "c"
-  }
-}
