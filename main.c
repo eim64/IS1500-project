@@ -51,15 +51,14 @@ void output_init() {
 
 
   // Initalize timer 2
-  // 80 MHz
-  // period = 80 000 000 * (240*10^-3) = 19 200 000
-  // 1:256 prescale:  19 200 000 / 256 = 75 000 = 0x124F8
-  // 0x8074 -> 7, set bits6-4 TCKPS<2:0> to 111 to prescale with 256
-  // 0x8074 -> 8, set bit 15 is 1 to start the timer 
-  // 0x8074 -> 4, combine timers to store 32 bit value
+  //          80 MHz        42ms -> 24 FPS
+  // period = 80 000 000 * (42*10^-3) = 3 360 000
+  // 1:256 prescale:  3 360 000 / 256 = 13 125 = 0x3345
+  // 0x8070 -> 7, set bits6-4 TCKPS<2:0> to 111 to prescale with 256
+  // 0x8070 -> 8, set bit 15 is 1 to start the timer 
   TMR2 = 0; 
-  T2CON = 0x8074;
-  PR2 = 0x124F8;
+  T2CON = 0x8070;
+  PR2 = 0x3345;
 }
 
 int main()
