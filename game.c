@@ -6,7 +6,7 @@
 #include "display.h"
 #include "graphics.h"
 #include "io.h"
-// #include "sink_pathing.h"
+#include "sink_pathing.h"
 
 #define DEADZONE 32
 #define DEATHTIME 48
@@ -92,12 +92,12 @@ void respawn_entity(entity_t* p) {
 }
 
 float get_enemy_mvspeed() {
-    float ret = 0.0035f;
+    float ret = 0.005f;
     
     if (enemy_count < MAX_ENEMIES)
         return ret;
 
-    ret += ((float)(kill_count - (enemy_count - 1) * 5)) * 0.0001f;
+    ret += ((float)(kill_count - (enemy_count - 1) * 5)) * 0.00015f;
 }
 
 
@@ -129,8 +129,10 @@ void kill_enemy(entity_t* p) {
 void restart_game() {
     int i;
     ammo_q_index = 0;
-    for(i = 0; i < ENTITY_COUNT; i++)
+    for(i = 0; i < ENTITY_COUNT; i++){
+        e_index[i] = i;
         entities[i].spr = 0;
+    }
     
     for(i = 0; i < 3; i++){
         entity_t* e = entities + i;
@@ -242,7 +244,7 @@ void game_logic() {
     raycast_map();
 
     // PREPARE DISTANCES/DIRECTIONS
-    // create_sink(pos_x, pos_y);
+    create_sink(pos_x, pos_y);
     
     // ENTITIY RENDERING + INTERACTIONS
     {
@@ -260,7 +262,7 @@ void game_logic() {
 
             // ENEMY AI
             if(e->spr == enspr) {
-                // follow_sink(e, enemy_mvspeed);
+                follow_sink(e, enemy_mvspeed);
 
                 // PLAYER GET HIT
                 if(!is_hit && dist_s < (0.6 * 0.6)) {
@@ -298,7 +300,7 @@ void game_logic() {
         PORTE = is_hit;
         if (!is_hit) {
             restart_game();
-            
+
             return;
         }
     }
