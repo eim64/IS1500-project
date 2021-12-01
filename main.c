@@ -1,6 +1,7 @@
 #include <pic32mx.h>  
 #include "display.h"
 #include "game.h"
+#include "killscreen.h"
 
 void user_isr() { }
 
@@ -61,6 +62,8 @@ void output_init() {
   PR2 = 0x3345;
 }
 
+game_state p_state;
+
 int main()
 {
   output_init();
@@ -73,11 +76,26 @@ int main()
   
   while(1)
   {
-    game_logic();
+    switch (current_state) {
+      case gaming:  game_logic();  break;
+      case deadass: death_logic(); break;
+    }
+
+    if(current_state != p_state) {
+      switch (current_state)
+      {
+        case gaming:  restart_game();   break;
+        case deadass: update_message(); break;
+      }
+    }
+
+
     if(IFS(0) & 0x100) {
       display_update();
       // Reset the interupt status flag
       IFSCLR(0) = 0x100;
-    } 
+    }
+
+    p_state = current_state;
   }
 }

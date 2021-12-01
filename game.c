@@ -11,6 +11,8 @@
 #define DEADZONE 32
 #define DEATHTIME 48
 
+game_state current_state = gaming;
+
 float pos_x = 2.5f;
 float pos_y = 1.5f;
 
@@ -302,7 +304,7 @@ void game_logic() {
 
         PORTE = is_hit;
         if (!is_hit) {
-            restart_game();
+            current_state = deadass;
 
             return;
         }

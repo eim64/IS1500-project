@@ -34,8 +34,16 @@ typedef struct {
     float c_dist;
 } entity_t;
 
+typedef enum {
+    gaming,
+    deadass
+} game_state;
+
+
+extern game_state current_state;
 extern entity_t entities[ENTITY_COUNT];
 extern uint32_t e_index[ENTITY_COUNT];
+extern uint32_t kill_count;
 
 void restart_game();
 void game_logic();
