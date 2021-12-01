@@ -10,3 +10,5 @@ void raycast_map();
 void show_noise();
 void draw_gun(int offset);
 void draw_fire(int offset);
+void draw_text(int x, int row, char* str);
+void draw_uint(int x, int row, int num);

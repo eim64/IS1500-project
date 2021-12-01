@@ -152,6 +152,9 @@ void restart_game() {
 void game_logic() {
     display_clear();
 
+    draw_text(10, 1, "KILLS:");
+    draw_uint(10, 2, kill_count);
+
     // controller logic
     {
         float rotation_speed = 0.00f;
