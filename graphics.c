@@ -215,7 +215,7 @@ void draw_sprite(uint32_t *sprite, float x, float y) {
     // screen_x = plane_coord / dir_coord * width / 2 + width / 2
     int32_t screen_x = (int32_t)(32.f * (plane_coord / dir_coord + 1));
     
-    const float perp_dist = dir_coord * dirlen;
+    const float perp_dist = (dir_coord + 1.f) * dirlen;
     int32_t size = (int32_t)(SCREEN_HEIGHT / perp_dist);
 
     const int32_t x0 = screen_x - size / 2;
