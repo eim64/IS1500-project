@@ -13,6 +13,8 @@
 
 game_state current_state = gaming;
 
+const float dt = 1.f/24.f;
+
 float pos_x = 2.5f;
 float pos_y = 1.5f;
 
@@ -94,12 +96,12 @@ void respawn_entity(entity_t* p) {
 }
 
 float get_enemy_mvspeed() {
-    float ret = 0.005f;
+    float ret = 0.75f * dt;
     
     if (enemy_count < MAX_ENEMIES)
         return ret;
 
-    ret += ((float)(kill_count - (enemy_count - 1) * 5)) * 0.00015f;
+    ret += ((float)(kill_count - (enemy_count - 1) * 5)) * 0.1f * dt;
 }
 
 
@@ -194,9 +196,9 @@ void game_logic() {
         if (potent_value < 512 + DEADZONE && potent_value > 512 - DEADZONE) 
             potent_value = 512;
         
-        rotation_speed = (((float)potent_value) - 512.f) / (512.f *  100.f);
+        rotation_speed = (((float)potent_value) - 512.f) / (512.f) * 1.5f * dt;
 
-        const float mvscal = 0.01f;
+        const float mvscal = dt * 1.0f / dirlen;
 
         if(button_state & 0x1) {
             pos_x -= dir_y * mvscal;
@@ -270,9 +272,8 @@ void game_logic() {
                 follow_sink(e, enemy_mvspeed);
 
                 // PLAYER GET HIT
-                if(!is_hit && dist_s < (0.6 * 0.6)) {
+                if(!is_hit && dist_s < (0.6 * 0.6))
                     is_hit = DEATHTIME;
-                }
             }
 
             e->c_dist = dist_s;

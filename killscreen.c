@@ -40,6 +40,6 @@ void death_logic() {
     if(btns && !p_btns)
         current_state = gaming;
 
-    PORTE = (1 << (((frame++) / 64) % 8));
+    PORTE = (1 << (((frame++) / 18) % 8));
     p_btns = btns;
 }

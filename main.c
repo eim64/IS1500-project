@@ -89,12 +89,13 @@ int main()
       }
     }
 
+    while((IFS(0) & 0x100) == 0);
+    
+    // Reset the interupt status flag
+    IFSCLR(0) = 0x100;
 
-    if(IFS(0) & 0x100) {
-      display_update();
-      // Reset the interupt status flag
-      IFSCLR(0) = 0x100;
-    }
+    display_update();
+      
 
     p_state = current_state;
   }
