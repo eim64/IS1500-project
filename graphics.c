@@ -265,7 +265,7 @@ void raycast_map(){
         float ray_x = dir_x + plane_x * scan_x;
         float ray_y = dir_y + plane_y * scan_x;
 
-        // line rasterizer, avoids float conversion in loop
+        // line rasterizer
         int tile_x = (int) pos_x;
         int tile_y = (int) pos_y;
 
@@ -277,51 +277,44 @@ void raycast_map(){
 
         int tiledir_x;
         int tiledir_y;
-        float edgedist_x;
-        float edgedist_y;
+        float griddist_x;
+        float griddist_y;
 
         // compute distances to reach next x/y grid line
-        // this is faster than using 
-        // edgedist_x = fabsf(pos_x - tile_x) + ((ray_x < 0) ? step_x : 0.f);
-        // tiledir_x = ((ray_x < 0) ? -1 : 1);
-
         if(ray_x < 0){
             tiledir_x = -1;
-            edgedist_x = (pos_x - tile_x) * step_x;
+            griddist_x = (pos_x - tile_x) * step_x;
         }else{
             tiledir_x = 1;
-            edgedist_x = (tile_x + 1.f - pos_x) * step_x;
+            griddist_x = (tile_x + 1.f - pos_x) * step_x;
         }
 
         if(ray_y < 0) {
             tiledir_y = -1;
-            edgedist_y = (pos_y - tile_y) * step_y;
+            griddist_y = (pos_y - tile_y) * step_y;
         }else{
             tiledir_y = 1;
-            edgedist_y = (tile_y + 1.f - pos_y) * step_y;
+            griddist_y = (tile_y + 1.f - pos_y) * step_y;
         }
 
-        // use side to remove last jump and draw corners
         int side;
-
         while(!map[tile_y][tile_x]) {
-            if(edgedist_x < edgedist_y) {
-                edgedist_x += step_x;
+            if(griddist_x < griddist_y) {
+                griddist_x += step_x;
                 tile_x += tiledir_x;
                 
                 side = 0;
             } else {
-                edgedist_y += step_y;
+                griddist_y += step_y;
                 tile_y += tiledir_y;
 
                 side = 1;
             }
         }
 
-        
         float perp_dist; 
-        if(side == 0) perp_dist = edgedist_x - step_x;
-        else          perp_dist = edgedist_y - step_y;
+        if(side == 0) perp_dist = griddist_x - step_x;
+        else          perp_dist = griddist_y - step_y;
 
         if (perp_dist < 0){
             display_setpx(x, 0);
