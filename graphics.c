@@ -213,40 +213,40 @@ void draw_sprite(uint32_t *sprite, float x, float y) {
     // use similar triangle to map values to screen, then center
     // screen pixels are already in -0.5 to 0.5 in plane dimension
     // screen_x = plane_coord / dir_coord * width / 2 + width / 2
-    int32_t screen_x = (int32_t)(32.f * (plane_coord / dir_coord + 1));
+    int screen_x = (int)(32.f * (plane_coord / dir_coord + 1));
     
     const float perp_dist = (dir_coord + 1.f) * dirlen;
-    int32_t size = (int32_t)(SCREEN_HEIGHT / perp_dist);
+    int size = (int)(SCREEN_HEIGHT / perp_dist);
 
-    const int32_t x0 = screen_x - size / 2;
-    int32_t cx = x0;
+    const int x0 = screen_x - size / 2;
+    int cx = x0;
     if (cx < 0) cx = 0;
 
-    int32_t x_end = cx + size;
+    int x_end = cx + size;
     if (x_end >= DRAW_WIDTH) x_end = DRAW_WIDTH - 1;
 
-    const int32_t y0 = SCREEN_HEIGHT / 2 - size / 2; 
-    int32_t y_start = y0;
+    const int y0 = SCREEN_HEIGHT / 2 - size / 2; 
+    int y_start = y0;
     if (y_start < 0) y_start = 0;
 
-    int32_t y_end = y_start + size;
+    int y_end = y_start + size;
     if (y_end > SCREEN_HEIGHT) y_end = SCREEN_HEIGHT - 1;
 
-    int32_t cy;
+    int cy;
 
     for (; cx <= x_end; cx++) {
         if (perp_dist > zbuffer[cx])
             continue;
 
         // avoid floats
-        int32_t u = (((cx - x0) * 1024 * 16) / size) / 1024;
+        int u = (((cx - x0) * 1024 * 16) / size) / 1024;
         if(u >= 16) continue;
 
         uint32_t col = sprite[u];
         if(!col) continue; //empty rows
 
         for (cy = y_start; cy < y_end; ++cy) {
-            int32_t v = (((cy - y0) * 1024 * 16) / size) / 1024;
+            int v = (((cy - y0) * 1024 * 16) / size) / 1024;
             uint32_t px = (col >> (v * 2)) & 0b11;
             if (!px) continue;
 
@@ -299,22 +299,20 @@ void raycast_map(){
 
         int side;
         while(!map[tile_y][tile_x]) {
-            if(griddist_x < griddist_y) {
+            side = griddist_x < griddist_y;
+
+            if(side) {
                 griddist_x += step_x;
                 tile_x += tiledir_x;
-                
-                side = 0;
             } else {
                 griddist_y += step_y;
                 tile_y += tiledir_y;
-
-                side = 1;
             }
         }
 
         float perp_dist; 
-        if(side == 0) perp_dist = griddist_x - step_x;
-        else          perp_dist = griddist_y - step_y;
+        if(side) perp_dist = griddist_x - step_x;
+        else     perp_dist = griddist_y - step_y;
 
         if (perp_dist < 0){
             display_setpx(x, 0);
