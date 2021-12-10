@@ -256,10 +256,9 @@ void draw_sprite(uint32_t *sprite, float x, float y) {
 }
 
 void raycast_map(){
-    int x;
+    int x, pt_x, pt_y;
     int p_side;
     int p_height;
-    float p_perpdist;
     for (x = 0; x < DRAW_WIDTH; x++) {
         float scan_x = 2 * x / (float)DRAW_WIDTH - 1;
         float ray_x = dir_x + plane_x * scan_x;
@@ -269,8 +268,8 @@ void raycast_map(){
         int tile_x = (int) pos_x;
         int tile_y = (int) pos_y;
 
-        float step_x = (ray_x == 0.0) ? 1e20f : 1 / ray_x;
-        float step_y = (ray_y == 0.0) ? 1e20f : 1 / ray_y;
+        float step_x = (ray_x == 0.0) ? 1000.f : 1 / ray_x;
+        float step_y = (ray_y == 0.0) ? 1000.f : 1 / ray_y;
 
         if(step_x < 0) step_x = -step_x;
         if(step_y < 0) step_y = -step_y;
@@ -330,11 +329,8 @@ void raycast_map(){
         display_setpx(x, center + h_offset);
         display_setpx(x, center - h_offset);
 
-        float diff = perp_dist - p_perpdist;
-        if (diff < 0) diff = -diff;
-
         // corner
-        if(x != 0 && (p_side != side || diff > 0.9f))
+        if(x != 0 && (p_side != side || (side && pt_x - tile_x != 0) || (!side && pt_y - tile_y != 0)))
         {
             int y;
             if(p_height > h_offset) h_offset = p_height + 1;
@@ -349,7 +345,8 @@ void raycast_map(){
 
         p_side = side;
         p_height = h_offset;
-        p_perpdist = perp_dist;
+        pt_x = tile_x;
+        pt_y = tile_y;
     }
 }
 
