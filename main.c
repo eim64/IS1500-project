@@ -81,6 +81,7 @@ int main()
       case deadass: death_logic(); break;
     }
 
+    // Run init in case of state change
     if(current_state != p_state) {
       switch (current_state)
       {
