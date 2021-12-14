@@ -28,6 +28,8 @@ float Q_rsqrt( float number )
 	return y;
 }
 
+
+// radially moves target away from source if too close
 void push(float* target_x, float* target_y, float source_x, float source_y, float distance) {
     const float dist_x = source_x - *target_x;
     const float dist_y = source_y - *target_y;
@@ -41,6 +43,7 @@ void push(float* target_x, float* target_y, float source_x, float source_y, floa
     }
 }
 
+// checks if target can get hit
 bool can_hit(const float t_x, const float t_y){
     const float rel_x = t_x - pos_x;
     const float rel_y = t_y - pos_y;
@@ -55,6 +58,7 @@ bool can_hit(const float t_x, const float t_y){
     int32_t screen_x = (int32_t)(32.f * (plane_coord / dir_coord + 1));
     const float perp_dist = dir_coord * dirlen;
     
+    // compute screen projected size of target and check zbuf if blocked
     int32_t size = (int32_t)(SCREEN_HEIGHT / perp_dist);
     return (screen_x + size >= DRAW_WIDTH / 2) && (screen_x - size <= DRAW_WIDTH / 2) && (zbuffer[DRAW_WIDTH / 2] > perp_dist);
 }

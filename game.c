@@ -73,6 +73,7 @@ void pick_ammo(entity_t* p) {
     p->spr = 0;
 }
 
+// find suitable entity to replace, prefferably an unused one
 entity_t* get_replacer() {
     int i;
     for(i = 0; i < ENTITY_COUNT; i++)
@@ -95,13 +96,14 @@ void respawn_entity(entity_t* p) {
     } while ((p->x - pos_x)*(p->x - pos_x) + (p->y - pos_y)*(p->x - pos_x) < 4);
 }
 
+// enemy speed increases as enemy max count is reached
 float get_enemy_mvspeed() {
     float ret = 0.75f * dt;
     
     if (enemy_count < MAX_ENEMIES)
         return ret;
 
-    ret += ((float)(kill_count - (enemy_count - 1) * 5)) * 0.1f * dt;
+    ret += ((float)(kill_count - (enemy_count - 1) * 5)) * 0.05f * dt;
 }
 
 
@@ -130,6 +132,7 @@ void kill_enemy(entity_t* p) {
     respawn_entity(p);
 }
 
+// prepare stuff
 void restart_game() {
     int i;
     ammo_q_index = 0;
@@ -174,6 +177,7 @@ void game_logic() {
             else             fire_offset = 0;
 
             int i;
+            // check entities, sorted by depth, for hit 
             for(i = ENTITY_COUNT - 1; i >= 0; i--){
                 entity_t* e = entities + e_index[i];
                 if(e->spr != enspr)
@@ -298,7 +302,7 @@ void game_logic() {
         PORTE = 0xFF;
     }
 
-
+    // death animation
     if(is_hit) {
         is_hit--;
         show_noise();

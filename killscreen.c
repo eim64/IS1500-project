@@ -36,10 +36,13 @@ void death_logic() {
     draw_text(8 - 5, 2, "KILLCOUNT:");
     draw_uint(8 - 2, 3, kill_count);
 
+    // return to gaming
     uint32_t btns = getbtns(); 
     if(btns && !p_btns)
         current_state = gaming;
 
+    // led effect
     PORTE = (1 << (((frame++) / 18) % 8));
+    
     p_btns = btns;
 }

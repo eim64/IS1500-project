@@ -5,7 +5,7 @@
 uint8_t sink_dist[MAP_WIDTH][MAP_HEIGHT];
 int ptile_x, ptile_y;
 
-
+// basically djikstra
 void rec_dst(int x, int y, uint8_t dst) {
     if (map[y][x])
         return;
@@ -21,6 +21,7 @@ void rec_dst(int x, int y, uint8_t dst) {
     rec_dst(x + 0, y - 1, nd | 3);
 }
 
+// prebakes directions and distances to a tile
 void create_sink(float x, float y) {
     const int tile_x = (int) x;
     const int tile_y = (int) y;
@@ -38,6 +39,7 @@ void create_sink(float x, float y) {
     ptile_y = tile_y;
 }
 
+// moves entity towards target
 void follow_sink(entity_t* e, float mvspeed) {
     const int tile_x = (int) e->x;
     const int tile_y = (int) e->y;

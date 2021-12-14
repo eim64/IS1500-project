@@ -264,7 +264,7 @@ void raycast_map(){
         float ray_x = dir_x + plane_x * scan_x;
         float ray_y = dir_y + plane_y * scan_x;
 
-        // line rasterizer
+        // ray rasterizer
         int tile_x = (int) pos_x;
         int tile_y = (int) pos_y;
 
@@ -310,6 +310,7 @@ void raycast_map(){
         }
 
         float perp_dist; 
+        // smart cos: https://lodev.org/cgtutor/raycasting.html 
         if(side) perp_dist = griddist_x - step_x;
         else     perp_dist = griddist_y - step_y;
 
